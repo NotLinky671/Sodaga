@@ -1,6 +1,9 @@
-#include "tgaimage.h"
-
 #include <cmath>
+#include <cstdlib>
+#include <tuple>
+#include "geometry.h"
+#include "model.h"
+#include "tgaimage.h"
 
 void DrawLine(int x0, int y0, int x1, int y1, TGAImage& image, TGAColor color) {
   bool steep = std::abs(x0 - x1) < std::abs(y0 - y1);
@@ -21,6 +24,7 @@ void DrawLine(int x0, int y0, int x1, int y1, TGAImage& image, TGAColor color) {
   int dx = x1 - x0;
   int dy = y1 - y0;
 
+  // derror 理论上y要加几
   float derror = std::abs(dy / (float)dx);
   float error = 0;
 
@@ -45,15 +49,39 @@ const TGAColor red = TGAColor{255, 0, 0, 255};
 const TGAColor green = TGAColor{0, 255, 0, 255};
 const TGAColor blue = TGAColor{0, 0, 255, 255};
 
+const int width = 800;
+const int height = 800;
+
+// 3D to 2D
+std::tuple<int,int> project(vec3 v) { 
+    return { (v.x + 1.) *  width / 2,
+             (v.y + 1.) * height / 2 };
+}
+
 int main(int argc, char** argv) {
-  TGAImage image(100, 100, TGAImage::RGB);
+    if (argc != 2) {
+        std::cerr << "Usage: " << argv[0] << " obj/model.obj" << std::endl;
+        return 1;
+    }
 
-  // 画三条线测试一下
-  DrawLine(7, 3, 12, 37, image, red);
-  DrawLine(12, 37, 62, 53, image, green);
-  DrawLine(62, 53, 7, 3, image, blue);
+    Model model(argv[1]);
+    TGAImage framebuffer(width, height, TGAImage::RGB);
 
-  image.flip_vertically();
-  image.write_tga_file("output.tga");
-  return 0;
+    for (int i=0; i<model.nfaces(); i++) {
+        auto [ax, ay] = project(model.vert(i, 0));
+        auto [bx, by] = project(model.vert(i, 1));
+        auto [cx, cy] = project(model.vert(i, 2));
+        DrawLine(ax, ay, bx, by, framebuffer, red);
+        DrawLine(bx, by, cx, cy, framebuffer, red);
+        DrawLine(cx, cy, ax, ay, framebuffer, red);
+    }
+
+    for (int i=0; i<model.nverts(); i++) {
+        vec3 v = model.vert(i);
+        auto [x, y] = project(v);
+        framebuffer.set(x, y, white);
+    }
+
+    framebuffer.write_tga_file("framebuffer.tga");
+    return 0;
 }
