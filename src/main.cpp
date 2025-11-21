@@ -25,7 +25,7 @@ void DrawLine(int x0, int y0, int x1, int y1, TGAImage& image, TGAColor color) {
   int dy = y1 - y0;
 
   // derror 理论上y要加几
-  float derror = std::abs(dy / (float)dx);
+  float derror = std::abs(dy) * 2;
   float error = 0;
 
   int y = y0;
@@ -37,9 +37,9 @@ void DrawLine(int x0, int y0, int x1, int y1, TGAImage& image, TGAColor color) {
 
     error += derror;
 
-    if (error > 0.5) {
+    if (error > dx) {
       y += (y1 > y0 ? 1 : -1);
-      error -= 1.0;
+      error -= dx * 2;
     }
   }
 }
